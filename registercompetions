@@ -1,0 +1,95 @@
+<?php
+include '../includes/config.php';
+
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'college') {
+    header('Location: ../index.php');
+    exit();
+}
+
+$college_id = $_SESSION['user_id'];
+
+// Get available competitions
+$competitions = $pdo->query("SELECT * FROM competitions WHERE status = 'open' AND registration_deadline > NOW()")->fetchAll();
+
+// Get students for dropdown
+$students = $pdo->prepare("SELECT * FROM students WHERE college_id = ? ORDER BY name");
+$students->execute([$college_id]);
+$student_list = $students->fetchAll();
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register for Competitions - UniFest 2026</title>
+    <!-- Include your CSS -->
+</head>
+<body>
+    <!-- Same navbar and sidebar -->
+
+    <div class="col-md-9 col-lg-10 p-4">
+        <h2 class="mb-4 fw-bold text-dark">Register for Competitions</h2>
+
+        <!-- Registration Form -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-tasks me-2"></i>Register Student for Competition
+            </div>
+            <div class="card-body">
+                <form action="process_registration.php" method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Select Student</label>
+                            <select class="form-select" name="student_id" required>
+                                <option value="">-- Select Student --</option>
+                                <?php foreach ($student_list as $student): ?>
+                                <option value="<?php echo $student['id']; ?>">
+                                    <?php echo htmlspecialchars($student['name']); ?> (<?php echo htmlspecialchars($student['roll_number']); ?>)
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Select Competition</label>
+                            <select class="form-select" name="competition_id" required>
+                                <option value="">-- Select Competition --</option>
+                                <?php foreach ($competitions as $comp): ?>
+                                <option value="<?php echo $comp['id']; ?>">
+                                    <?php echo htmlspecialchars($comp['name']); ?> (<?php echo $comp['type']; ?>)
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success">Register</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Available Competitions -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-trophy me-2"></i>Available Competitions
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <?php foreach ($competitions as $comp): ?>
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5><?php echo htmlspecialchars($comp['name']); ?></h5>
+                                <p class="mb-1"><strong>Type:</strong> <?php echo $comp['type']; ?></p>
+                                <p class="mb-1"><strong>Venue:</strong> <?php echo htmlspecialchars($comp['venue']); ?></p>
+                                <p class="mb-1"><strong>Date:</strong> <?php echo date('M j, Y g:i A', strtotime($comp['event_datetime'])); ?></p>
+                                <p class="mb-1"><strong>Deadline:</strong> <?php echo date('M j, Y g:i A', strtotime($comp['registration_deadline'])); ?></p>
+                                <small class="text-muted">Max Participants: <?php echo $comp['max_participants']; ?></small>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
