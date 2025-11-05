@@ -1,0 +1,140 @@
+<?php
+include '../includes/config.php';
+
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+    header('Location: ../index.php');
+    exit();
+}
+
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = $_POST['name'];
+    $category = $_POST['category'];
+    $type = $_POST['type'];
+    $max_participants = $_POST['max_participants'];
+    $venue = $_POST['venue'];
+    $event_datetime = $_POST['event_datetime'];
+    $registration_deadline = $_POST['registration_deadline'];
+    
+    $stmt = $pdo->prepare("INSERT INTO competitions (name, category, type, max_participants, venue, event_datetime, registration_deadline) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$name, $category, $type, $max_participants, $venue, $event_datetime, $registration_deadline]);
+    
+    header('Location: manage_competitions.php?success=competition_added');
+    exit();
+}
+
+// Get all competitions
+$competitions = $pdo->query("SELECT * FROM competitions ORDER BY event_datetime")->fetchAll();
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Competitions - UniFest 2026</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Your admin CSS */
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar d-flex flex-column">
+        <!-- Your admin sidebar -->
+        <a href="dashboard.php" class="nav-link"><i class="fas fa-home me-2"></i>Dashboard</a>
+        <a href="manage_colleges.php" class="nav-link"><i class="fas fa-university me-2"></i>Manage Colleges</a>
+        <a href="manage_competitions.php" class="nav-link active"><i class="fas fa-trophy me-2"></i>Manage Competitions</a>
+        <a href="enter_marks.php" class="nav-link"><i class="fas fa-marker me-2"></i>Enter Marks</a>
+        <a href="../includes/logout.php" class="nav-link text-danger"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
+    </div>
+
+    <div class="content">
+        <nav class="navbar navbar-expand-lg navbar-dark mb-4 rounded">
+            <div class="container-fluid">
+                <h4 class="text-white mb-0"><i class="fas fa-trophy me-2"></i>Manage Competitions</h4>
+            </div>
+        </nav>
+
+        <!-- Add Competition Form -->
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card p-4">
+                    <h5><i class="fas fa-plus me-2"></i>Add New Competition</h5>
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label">Competition Name</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Category</label>
+                            <select class="form-select" name="category" required>
+                                <option value="technical">Technical</option>
+                                <option value="cultural">Cultural</option>
+                                <option value="sports">Sports</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Type</label>
+                            <select class="form-select" name="type" required>
+                                <option value="individual">Individual</option>
+                                <option value="group">Group</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Max Participants</label>
+                            <input type="number" class="form-control" name="max_participants" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Venue</label>
+                            <input type="text" class="form-control" name="venue" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Event Date & Time</label>
+                            <input type="datetime-local" class="form-control" name="event_datetime" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Registration Deadline</label>
+                            <input type="datetime-local" class="form-control" name="registration_deadline" required>
+                        </div>
+                        <button type="submit" class="btn btn-success">Add Competition</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Competitions List -->
+            <div class="col-md-6 mb-4">
+                <div class="card p-4">
+                    <h5><i class="fas fa-list me-2"></i>All Competitions</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Date</th>
+                                    <th>Venue</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($competitions as $comp): ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($comp['name']); ?></td>
+                                    <td><?php echo date('M j, g:i A', strtotime($comp['event_datetime'])); ?></td>
+                                    <td><?php echo htmlspecialchars($comp['venue']); ?></td>
+                                    <td>
+                                        <span class="badge bg-<?php echo $comp['status'] === 'open' ? 'success' : 'danger'; ?>">
+                                            <?php echo ucfirst($comp['status']); ?>
+                                        </span>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
